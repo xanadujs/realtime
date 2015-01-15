@@ -1,0 +1,123 @@
+<class name="activelist" scrollable="true" padding="2" border="1" border-radius="3px">
+    <attribute name="flow" value="in" type="string"/>
+    <attribute name="interval" value="20000" type="string"/>
+    <attribute name="latesttimeinstack" value="0" type="number"/>
+    <attribute name="detailpanel" value="null" type="expression"/>
+
+    <labeltoggle name="startBtn" text="Start" height="16" color="${this.selected?'white':this.parent.bordercolor}"
+        selectcolor="${null}" defaultcolor="${null}" font-style="italic">
+        <handler event="onselected" args="sel">
+            this.setAttribute("text", sel? "Stop": "Start");
+            if (sel) {
+                this.parent.startAutoUpdating(this.parent.interval);
+            } else {
+                this.parent.stopAutoUpdating();
+            }
+        </handler>
+    </labeltoggle>
+    <view name="groups" y="25" height="${this.parent.height-25}" width="100%" padding="2">
+
+        <class name="stockgroup" width="100%"
+            height="16" font-size="12">
+            
+            <handler event="oninit">
+                this.setAttribute("color", this.parent.parent.parent.bordercolor);
+            </handler>
+            <spacedlayout axis="y" spacing="0" updateparent="true"/>
+            <view name="summary" width="${this.parent.width-10}" height="16">
+                <resizelayout axis="x" spacing="10"></resizelayout>
+                <text name="time" layouthint='{"weight":1}'></text>
+                <text name="count" resize="false" width="20" style="text-align:right"></text>
+                <text name="flowamount" resize="false" width="30" style="text-align:right"></text>
+            </view>
+
+            <handler event="onclick" method="show"></handler>
+
+            <method name="show">
+                this.parent.parent.parent.detailpanel.show(this.data, this);
+            </method>
+
+            <handler event="ondata" args="data">
+                this.summary.time.setAttribute("text", new Date(data.time).toLocaleTimeString());
+                this.summary.count.setAttribute("text", data.items.length);
+                this.summary.flowamount.setAttribute("text", ((data.flowamount)/100000000).toFixed(2));
+            </handler>
+        </class>
+
+        <view name="list" width="100%">
+        <!-- <groupdetailpanel name="groupdetail" x="200" ignorelayout="true" bordercolor="${this.parent.parent.bordercolor}"/> -->
+            <spacedlayout axis="y" spacing="0"></spacedlayout>
+            <replicator name="repl" classname="stockgroup" updateparent="true"
+                 sortfield="time" sortasc="false"></replicator>
+        </view>
+    </view>
+
+    <handler event="oninit">
+        //this.startWatching();
+        //this.groupdetail = canvas.createChild({class: 'groupdetailpanel', ignorelayout:true})
+    </handler>
+
+    <method name="startAutoUpdating" args="interval">
+        console.log("startAutoUpdating", interval)
+        this.requestUpdating();
+        var me = this;
+        this.intervalObject = setInterval(this.requestUpdating, interval);
+    </method>
+
+    <method name="stopAutoUpdating">
+        console.log("stopAutoUpdating")
+        if (this.intervalObject) clearInterval(this.intervalObject)
+    </method>
+
+    <method name="appendData" args="data">
+        if (data.length===0)  return;
+        
+        //data = data.slice(0,50);
+
+        var flowamount = 0;
+        var flow = this.flow;
+
+        for (var i=0; data.length>i; i++) {
+            flowamount += data[i].realtime_flow;
+            this.latesttimeinstack = Math.max(this.latesttimeinstack, data[i].servertime)
+        }
+
+        data.sort(function(obj1, obj2) {
+            var flowamount1 = obj1.realtime_flow;
+            var flowamount2 = obj2.realtime_flow;
+
+            if (flowamount1>flowamount2) return 1;
+            else if (flowamount2>flowamount1) return -1;
+            else return 0;
+        });
+
+        
+        var pdata = this.groups.list.repl.data;
+        var group = {items: data, flowamount: flowamount, time: this.latesttimeinstack, open:false};
+        pdata.push(group);
+        this.groups.list.repl.setAttribute("data", pdata)
+        //this.groups.list.repl.refresh();
+    </method>
+
+    <method name="requestUpdating">
+        var me = this;
+        $.ajax({
+            url: '/api',
+            data: {
+              action: "getActiveItems",
+              flow: this.flow,
+              max:10000,
+              time: this.latesttimeinstack
+            },
+            success: function(data) {
+                var json = JSON.parse(data);
+                me.appendData(json);
+                return;
+            },
+            error: function(err) {
+              return console.warn('data error:', err);
+            }
+          });
+    </method>
+
+</class>
