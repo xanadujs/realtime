@@ -13,14 +13,16 @@ var tempMoneyFlowObj;
 var last1MoneyFlowObj;
 var last2MoneyFlowObj;
 
-var minInRatioRealTime = 0.0001;
-var minOutRatioRealTime = 0.0001;
-var minInAmountRealTime = 5000000;
-var minOutAmountRealTime = 5000000;
+var minInRatioRealTime = 0.0007;
+var minOutRatioRealTime = 0.0007;
+var minInAmountRealTime = 70000000;
+var minOutAmountRealTime = 70000000;
 
-var minInRatio = 0.002;
-var minInAmount = 100000000;
+var minInRatio = 0.005;
+var minInAmount = 50000000;
 var minPriceInc = 0.01;
+
+var historyStore = {};
 
 var intervalObject;
 function startWatching(interval) {
@@ -38,6 +40,15 @@ function getFavourateItems (stocks) {
     for (var i=0; tempMoneyFlowObj && i<arr.length; i++) {
         var obj = tempMoneyFlowObj[arr[i]];
         if (obj) reArr.push(obj);
+    }
+    return reArr;
+}
+
+function getHistoryItems () {
+    var reArr = [];
+    for (var att in historyStore) {
+        if (!historyStore[att].latest) continue;
+        reArr.push(historyStore[att]);
     }
     return reArr;
 }
@@ -117,7 +128,13 @@ function update() {
                         })(mfobj);
                         mfobj.datetime = new Date(mfobj.opendate+" " +mfobj.ticktime).getTime();
                         mfobj['name'] = stockUtil.getStockInfo(mfobj.symbol).name;
+                        mfobj['pe'] = stockUtil.getStockInfo(mfobj.symbol).pe;
                         mfobj.servertime = new Date().getTime();
+                        
+                        if (historyStore[mfobj.symbol]) {
+                            historyStore[mfobj.symbol].latest = mfobj;
+                        }
+
                         var lastClose = stockUtil.getStockInfo(mfobj.symbol).lastClose;
                         var price_inc = (mfobj.trade-lastClose)/lastClose;
                         mfobj['price_inc'] = price_inc;
@@ -137,7 +154,13 @@ function update() {
     }
 
 }
-
+function storeHistory(obj, flag) {
+    var stock = obj.symbol;
+    if (historyStore[stock] === undefined) {
+        historyStore[stock] = obj;
+        historyStore[stock].historyFlag = flag;
+    }
+}
 function updateStacks() {
     
     var switchFlag = false;
@@ -167,6 +190,7 @@ function updateStacks() {
         if (tempMoneyFlowObj[stock].price_inc<minPriceInc 
             && inamount> Math.min(minInRatio*mktCap, minInAmount)) {
             strongInStack.push(tempMoneyFlowObj[stock]);
+            storeHistory(tempMoneyFlowObj[stock],"strongin");
         }
 
          if (switchFlag) continue;
@@ -193,7 +217,7 @@ function updateStacks() {
             tempMoneyFlowObj[stock].flow = "in";
             tempMoneyFlowObj[stock].realtime_flow = (nettemp - netlast1) > minIn ? (nettemp - netlast1) : nettemp - netlast2;
             strongInStackRealTime.push(tempMoneyFlowObj[stock]);
-            // inTempArr.pushI(tempMoneyFlowObj[stock]);
+            storeHistory(tempMoneyFlowObj[stock],"stronginrealtime");
             bothflag = true;
         }
 
@@ -202,9 +226,9 @@ function updateStacks() {
             //console.log(">>", stock, Math.max((tempout - last1out) ,  (tempout - last2out)), minOut)
             outcount++;
             tempMoneyFlowObj[stock].flow = "out";
-            tempMoneyFlowObj[stock].realtime_flow = (netlast1 - nettemp) > minOut ? (netlast1 - nettemp) : netlast2 - nettemp;
+            tempMoneyFlowObj[stock].realtime_flow = (netlast1 - nettemp) > minOut ? (nettemp - netlast1) : nettemp - netlast2;
             strongOutStackRealTime.push(tempMoneyFlowObj[stock]);
-            // outTempArr.pushI(tempMoneyFlowObj[stock]);
+            storeHistory(tempMoneyFlowObj[stock],"strongoutrealtime");
             if (bothflag) console.log(stock, nettemp, netlast1, netlast2)
         }
     }
@@ -228,3 +252,4 @@ exports.stopWatching = stopWatching;
 exports.getActiveItems = getActiveItems;
 exports.getStroingInItems = getStroingInItems;
 exports.getFavourateItems = getFavourateItems;
+exports.getHistoryItems = getHistoryItems;

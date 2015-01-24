@@ -1,6 +1,12 @@
 var moneyFlowWatcher = require("./moneyflowwatcher");
 var stockUtil = require("./stockutil");
 
+
+function getHistoryItems(params, callback) {
+    callback(JSON.stringify(moneyFlowWatcher.getHistoryItems(params.flag)));
+}
+exports.getHistoryItems = getHistoryItems;
+
 function getFavourateItems(params, callback) {
     callback(JSON.stringify(moneyFlowWatcher.getFavourateItems(params.list)));
 }

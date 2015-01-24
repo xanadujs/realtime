@@ -1,6 +1,6 @@
 <class name="activelist" scrollable="true" padding="2" border="1" border-radius="3px">
     <attribute name="flow" value="in" type="string"/>
-    <attribute name="interval" value="20000" type="string"/>
+    <attribute name="interval" value="30000" type="string"/>
     <attribute name="latesttimeinstack" value="0" type="number"/>
     <attribute name="detailpanel" value="null" type="expression"/>
 
@@ -15,10 +15,11 @@
             }
         </handler>
     </labeltoggle>
+
     <view name="groups" y="25" height="${this.parent.height-25}" width="100%" padding="2">
 
         <class name="stockgroup" width="100%"
-            height="16" font-size="12">
+            height="16" font-size="12" padding="2">
             
             <handler event="oninit">
                 this.setAttribute("color", this.parent.parent.parent.bordercolor);
@@ -35,6 +36,12 @@
 
             <method name="show">
                 this.parent.parent.parent.detailpanel.show(this.data, this);
+                this.setAttribute('background', 'linear-gradient(to right, #101010, #202020)');
+            </method>
+
+            <method name="hide">
+                if (this.sprite)
+                    this.setAttribute('background', 'transparent');
             </method>
 
             <handler event="ondata" args="data">
@@ -46,7 +53,7 @@
 
         <view name="list" width="100%">
         <!-- <groupdetailpanel name="groupdetail" x="200" ignorelayout="true" bordercolor="${this.parent.parent.bordercolor}"/> -->
-            <spacedlayout axis="y" spacing="0"></spacedlayout>
+            <spacedlayout axis="y" spacing="1"></spacedlayout>
             <replicator name="repl" classname="stockgroup" updateparent="true"
                  sortfield="time" sortasc="false"></replicator>
         </view>
@@ -54,7 +61,6 @@
 
     <handler event="oninit">
         //this.startWatching();
-        //this.groupdetail = canvas.createChild({class: 'groupdetailpanel', ignorelayout:true})
     </handler>
 
     <method name="startAutoUpdating" args="interval">

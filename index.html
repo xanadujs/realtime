@@ -18,10 +18,530 @@
   </style>
 </head>
 <body>
-<view id="canvas" width="95%" height="95%" padding="10">
+<view id="body" width="95%" height="95%" padding="10">
+    <node name="bubblemanager">
+        <attribute name="bubbles" value="[]" type="expression"></attribute>
+        <method name="show" args="data">
+            var bbl = this.get();
+            bbl.show(data);
+            return bbl;
+        </method>
+        <method name="hide" args="bbl">
+            bbl.hide();
+            this.put(bbl);
+        </method>
+        
+        <method name="get">
+            var bbl = this.bubbles.pop();
+            if (!bbl) bbl = body.createChild({class: 'stockinfobubble', bubblemanager: this});
+            return bbl;       
+        </method>
+
+        <method name="put" args="bbl">
+            this.bubbles.push(bbl);
+        </method>
+    </node>
+
+    <class name="stockinfobubble" bgcolor="#000000" opacity=".9" width="310" height="210"
+        color="#f0f0f0" border="0" border-radius="3px" padding="3"
+        ignorelayout="true">
+        <attribute name="bubblemanager" value="null" type="expression"></attribute>
+        <attribute name="mouseisdown" value="false" type="boolean"></attribute>
+
+        <handler event="onmousedown">
+          this.setAttribute('mouseisdown', true)
+        </handler>
+
+        <handler event="onmouseup">
+          this.setAttribute('mouseisdown', false)
+        </handler>
+        <labelbutton text="x" y="-2" height="16" defaultcolor="null" selectcolor="null" 
+            color="#808080" x="${this.parent.width-this.width-5}">
+            <handler event="onclick">
+                this.parent.hide();
+            </handler>
+        </labelbutton>
+
+        <view  x="${this.parent.width-20}" width="20" y="50">
+            <spacedlayout axis="y" spacing="1"></spacedlayout>
+            <labelbutton name="min" text="m" height="16" defaultcolor="null" selectcolor="null" 
+                color="#808080">
+                <handler event="onclick">
+                    this.parent.parent.toggleimage("http://image.sinajs.cn/newchart/min/n/#.gif");
+                </handler>
+            </labelbutton>
+
+            <labelbutton name="daily" text="d" height="16" defaultcolor="null" selectcolor="null" 
+                color="#808080">
+                <handler event="onclick">
+                    this.parent.parent.toggleimage("http://image.sinajs.cn/newchart/daily/n/#.gif");
+                </handler>
+            </labelbutton>
+
+            <labelbutton name="weekly" text="w" height="16" defaultcolor="null" selectcolor="null" 
+                color="#808080">
+                <handler event="onclick">
+                    this.parent.parent.toggleimage("http://image.sinajs.cn/newchart/weekly/n/#.gif");
+                </handler>
+            </labelbutton>
+
+            <labelbutton name="flow" text="f" height="16" defaultcolor="null" selectcolor="null" 
+                color="#808080">
+                <handler event="onclick">
+                    this.parent.parent.showflowdata();
+                </handler>
+            </labelbutton>
+        </view>
+        <view visible="${this.parent.minChart.visible}" bgcolor="#f0f0f0" x="20" height="12" width="140"></view>
+        <bitmap name="minChart" x="-5" width="300" height="200" stretches="true">
+            
+        </bitmap>
+
+        <text name="flowdata" x="10" y="10" visible="false" 
+            font-size="14" color="#f0f0f0">
+            <method name="updateflowdata">
+                var data = this.parent.data;
+                function tobold(num, color) {
+                    var sp = {0:"", 1:"&nbsp;", 2:"&nbsp;&nbsp;", 3:"&nbsp;&nbsp;&nbsp;", 
+                        4:"&nbsp;&nbsp;&nbsp;&nbsp;", 5:"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", 
+                        6:"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", 7:"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"};
+                    
+                    var numstr = (num/10000).toFixed(0);
+                    var nlen = numstr.length;
+                    numstr += sp[6-nlen];
+
+                    var str = '&lt;b&gt;' + numstr + '&lt;&#x2F;b&gt;'
+                    if (num!=0 &amp;&amp; color) {
+                        str = '&lt;font color='
+                        +(num>0? '#f00000': '#00f000')
+                        +'&gt;' + str +'&lt;&#x2F;font&gt;'
+                    }
+                    return str;
+                }
+                if (!data) return;
+                var str = data.name+ "&lt;br&gt;&lt;br&gt;";
+                str += "r0_in:" + tobold(data.r0_in) + "r0_out:" + tobold(data.r0_out)
+                    + "net0:" + tobold(data.r0_in-data.r0_out, '#f00000') 
+                    + "r0:" + tobold(data.r0) 
+                    + "&lt;br&gt;&lt;br&gt;";
+                str += "r1_in:" + tobold(data.r1_in) + "r1_out:" + tobold(data.r1_out)
+                    + "net1:" + tobold(data.r1_in-data.r1_out, '#f00000') 
+                    + "r1:" + tobold(data.r1) 
+                    + "&lt;br&gt;&lt;br&gt;";
+                str += "r2_in:" + tobold(data.r2_in) + "r2_out:" + tobold(data.r2_out)
+                    + "net2:" + tobold(data.r2_in-data.r2_out, '#f00000') 
+                    + "r2:" + tobold(data.r2) 
+                    + "&lt;br&gt;&lt;br&gt;";
+                str += "r3_in:" + tobold(data.r3_in) + "r3_out:" + tobold(data.r3_out)
+                    + "net3:" + tobold(data.r3_in-data.r3_out, '#f00000') 
+                    + "r3:" + tobold(data.r3) 
+                    + "&lt;br&gt;&lt;br&gt;";
+
+                this.setAttribute("text", str)
+            </method>
+        </text>
+
+        <dragstate applied="${this.parent.mouseisdown}">
+          <handler event="onapplied" args="applied">
+            //console.log('applied state', applied, this.parent.width)
+          </handler>
+        </dragstate>
+        <method name="showflowdata">
+            this.minChart.setAttribute("visible", false);
+            this.flowdata.setAttribute("visible", true);
+        </method>
+        <method name="toggleimage" args="url">
+            this.minChart.setAttribute("visible", true);
+            this.flowdata.setAttribute("visible", false);
+
+            var minsrc = url? url: "http://image.sinajs.cn/newchart/min/n/#.gif"
+
+            minsrc = minsrc.replace("#", this.data.symbol);
+            this.minChart.setAttribute("src", minsrc);
+        </method>
+
+        <method name="show" args="data">
+            this.data = data;
+            this.setAttribute("x", dr.mouse.x-30);
+            this.setAttribute("y", dr.mouse.y-10);
+            //this.setAttribute("width", 30);
+            //this.setAttribute("height", 30);
+            this.setAttribute("opacity", 0);
+            this.setAttribute("visible", true);
+            this.animate({opacity:.9}, 500);
+            this.flowdata.updateflowdata();
+
+            this.toggleimage();
+        </method>
+        <method name="hide">
+            this.setAttribute("visible", false);
+            this.bubblemanager.put(this);
+        </method>
+  </class>
+
+<class name="sortlabel" extends="labeltoggle" width="30"
+    color="#d0d0d0" selectcolor="${null}" defaultcolor="${null}">
+    <attribute name="field" value="" type="string"></attribute>
+    <attribute name="repltarget" value="" type="expression"></attribute>
+    <handler event="onmousedown">
+        if (this.repltarget.sortfield != this.field) {
+            this.repltarget.setAttribute("sortfield", this.field);
+            //this.repltarget.setAttribute("sortasc", !this.selected);
+        } else {
+             this.repltarget.setAttribute("sortasc", !this.repltarget.sortasc);
+        }
+    </handler>
+</class>
+
+<class name="groupdetailpanel" height="30" width="400" color="#d0d0d0"
+    border="1" border-radius="3px" bgcolor="#202020" padding="5">
+    <handler event="onmouselongdownitem" args="itemview"></handler>
+    <handler event="ondblclickitem" args="itemview"></handler>
+    <text text="${this.parent.title}" y="-5"></text>
+    <labelbutton text="x" y="-5" height="16" defaultcolor="null" selectcolor="null" color="#d0d0d0" 
+        x="${this.parent.width-this.width-15}">
+        <handler event="onclick">
+            this.parent.hide();
+        </handler>
+    </labelbutton>
+ 
+    <view name="header" y="5">
+        <spacedlayout axis="x" spacing="5" updateparent="true"></spacedlayout>
+        <sortlabel field="symbol" text="dm" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="50"></sortlabel>
+        <view width="50"></view>
+        <sortlabel field="trade" text="trd" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+        <sortlabel field="price_inc" text="inc" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="40"></sortlabel>
+        <sortlabel field="realtime_flow" text="rtf" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="32"></sortlabel>
+        <sortlabel field="netflowamount" text="nf" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="32"></sortlabel>
+        <sortlabel field="netamountratio" text="nfr" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+        <sortlabel field="marketcap" text="mc" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+        <sortlabel field="pe" text="pe" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+        <!--sortlabel field="price_inc" text="inc"></sortlabel-->
+    </view>
+
+    <view name="list" y="26" height="${this.parent.height-36}" width="100%" scrollable="true" scrollbars="true">
+        <view name="items">
+            <replicator name="repl" classname="stockitem" pooling="true" lazycount="20"  
+                sortfield="netamountratio" sortasc="false"></replicator>
+            <spacedlayout axis="y" spacing="0" updateparent="true"></spacedlayout>
+        </view>
+    </view>
+
+   <method name="hide">
+        this.list.items.repl.setAttribute("data", []);
+        this.setAttribute("layouthint", null);
+        this.setAttribute("height", 30);
+        if (this.groupitemview) this.groupitemview.hide();
+    </method>
+
+    <method name="show" args="data, groupitemview">
+        if (this.groupitemview) this.groupitemview.hide();
+
+        this.setAttribute("layouthint", '{"weight":1}');
+        this.groupitemview = groupitemview;
+        for (var i=0; data.items.length>i; i++) {
+            var obj = data.items[i];
+             var netfamt = obj.r0_in+obj.r1_in-obj.r0_out-obj.r1_out;
+             var famt = obj.r0+obj.r1+obj.r2+obj.r3;
+             obj.netflowamount = netfamt;
+             obj.netamountratio = netfamt/famt;
+             var mcap = (obj.volume*obj.trade/(obj.turnover/10000))/100000000;
+             obj.marketcap = mcap;
+        }
+
+        this.list.items.repl.setAttribute("data", data.items);
+        //this.setAttribute("visible", true)
+    </method>
+
+</class>
+
+<class name="stockitem" height="16"
+    font-size="12" color="#d0d0d0">
+    <handler event="ondata" args="data">
+        //console.log("stockItem ondata", this);
+        this.symbol.setAttribute("text", data.symbol);
+        this.sname.setAttribute("text", data.name);
+        this.trade.setAttribute("text", Number(data.trade).toFixed(2))
+
+        var inc = data.price_inc*100;
+        this.inc.setAttribute("color", inc>0?'#ff0000':'#00ff00');
+        this.inc.setAttribute("text", Number(inc).toFixed(1)+"%")
+
+        this.realtimeflow.setAttribute("text", Number(data.realtime_flow/10000).toFixed(0))
+        if(!data.realtime_flow) this.realtimeflow.setAttribute("opacity", 0.2);
+
+        this.netflowamount.setAttribute("text", (data.netflowamount/10000).toFixed(0))
+
+        this.flowamount.setAttribute("text", (100*data.netamountratio).toFixed(0)+"%")
+
+        if(data.pe) {
+            this.pe.setAttribute("text", data.pe.toFixed(0));
+        }
+
+        this.ticktime.setAttribute("text", data.ticktime);
+        
+        this.mcap.setAttribute("text", data.marketcap.toFixed(0));
+       // this.setAttribute("bgcolor", data.flow==="in"? '#ffdddd': '#ddffdd');
+    </handler>
+    <spacedlayout axis="x" spacing="5" updateparent="true"></spacedlayout>
+
+    <dblclicktext name="symbol" width="50" resize="false">
+        <handler event="ondblclick">
+            this.parent.parent.parent.parent.sendEvent("dblclickitem", this.parent)
+        </handler>
+        <handler event="onmouselongdown">
+            this.parent.parent.parent.parent.sendEvent("mouselongdownitem", this.parent)
+        </handler>
+    </dblclicktext>
+    <text name="sname" width="50" resize="false"></text>
+    <text name="trade" width="30" resize="false"  style="text-align:right"></text>
+    <text name="inc" width="35" resize="false" style="text-align:right"></text>
+    
+    <text name="realtimeflow" width="30" resize="false"  style="text-align:right"></text>
+    <text name="netflowamount" width="35" resize="false"  style="text-align:right"></text>
+    <text name="flowamount" width="25" resize="false"  style="text-align:right"></text>
+    <text name="mcap" width="35" resize="false"  style="text-align:right"></text>
+    <text name="pe" width="25" resize="false"  style="text-align:right"></text>
+    <text name="ticktime" width="100" resize="false"></text>
+    <text name="note"></text>
+</class>
+
+<class name="historypanel" height="30" width="400" color="#d0d0d0"
+    border="1" border-radius="3px" bgcolor="#202020" padding="5">
+    <handler event="onmouselongdownitem" args="itemview"></handler>
+    <handler event="ondblclickitem" args="itemview"></handler>
+    <text text="${this.parent.title}" y="-5"></text>
+    <labelbutton text="x" y="-5" height="16" defaultcolor="null" selectcolor="null" color="#d0d0d0" 
+        x="${this.parent.width-this.width-15}">
+        <handler event="onclick">
+
+            if (this.parent.intervalObject != null){
+                this.parent.hide();
+            } else this.parent.show();
+        </handler>
+    </labelbutton>
+
+    <labeltoggle name="flag_strongin" text="si" height="16" x="${this.parent.width-this.width-200}"
+        color="#f0f0f0" selectcolor="${null}" defaultcolor="${null}" font-style="italic"
+        opacity="${this.selected?1:0.5}" selected="true">
+        <handler event="onselected" args="sel">
+            this.parent.show();            
+        </handler>
+    </labeltoggle>
+
+    <labeltoggle name="flag_stronginrealtime" text="sirt" height="16" x="${this.parent.width-this.width-140}"
+        color="#d0d0d0" selectcolor="${null}" defaultcolor="${null}"
+        opacity="${this.selected?1:0.5}" selected="true">
+        <handler event="onselected" args="sel">
+            this.parent.show();            
+        </handler>
+    </labeltoggle>
+    
+    <labeltoggle name="flag_strongoutrealtime" text="sort" height="16" x="${this.parent.width-this.width-70}"
+        color="#d0d0d0" selectcolor="${null}" defaultcolor="${null}"
+        opacity="${this.selected?1:0.5}">
+        <handler event="onselected" args="sel">
+            this.parent.show();            
+        </handler>
+    </labeltoggle>
+
+    <view name="header" y="15">
+        <spacedlayout axis="x" spacing="5" updateparent="true"></spacedlayout>
+        <sortlabel field="symbol" text="dm" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="50"></sortlabel>
+        <view width="55"></view>
+        <sortlabel field="trade" text="trd" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+        <sortlabel field="latest_trade" text="ltrd" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+
+        <sortlabel field="latest_inc" text="linc" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="32"></sortlabel>
+        
+        <sortlabel field="latest_price_inc" text="inc" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="40"></sortlabel>
+
+        <sortlabel field="marketcap" text="mc" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+
+        <sortlabel field="pe" text="pe" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}"></sortlabel>
+        
+        <sortlabel field="ticktime" text="tt" repltarget="${this.parent.parent.list.items.repl}" 
+            opacity="${this.repltarget.sortfield===this.field?1:0.5}" width="32"></sortlabel>
+        <!--sortlabel field="price_inc" text="inc"></sortlabel-->
+    </view>
+
+    <view name="list" y="35" height="${this.parent.height-50}" width="100%" scrollable="true" scrollbars="true">
+        <view name="items">
+            <replicator name="repl" classname="historyitem" pooling="true" lazycount="20"  
+                sortfield="netamountratio" sortasc="false"></replicator>
+            <spacedlayout axis="y" spacing="0" updateparent="true"></spacedlayout>
+        </view>
+    </view>
+
+    <handler event="oninit">
+        setTimeout(this.show, 1000);
+    </handler>
+
+    <method name="startAutoUpdating" args="interval">
+        this.requestUpdating();
+        var me = this;
+        this.intervalObject = setInterval(this.requestUpdating, interval);
+    </method>
+
+    <method name="stopAutoUpdating">
+        if (this.intervalObject) clearInterval(this.intervalObject)
+        this.intervalObject = null;
+    </method>
+
+    <method name="updateData" args="data">
+        var filterdata = [];
+        var strongincount = 0;
+        var stronginrealtimecount = 0;
+        var strongoutrealtimecount = 0
+        for (var i=0; data.length>i; i++) {
+            var obj = data[i];
+
+            if (this.flag_strongin.selected &amp;&amp; obj.historyFlag === "strongin"
+            || this.flag_stronginrealtime.selected &amp;&amp; obj.historyFlag === "stronginrealtime"
+            || this.flag_strongoutrealtime.selected &amp;&amp; obj.historyFlag === "strongoutrealtime") {
+                if (obj.historyFlag==="strongin") strongincount++;
+                if (obj.historyFlag==="stronginrealtime") stronginrealtimecount++;
+                if (obj.historyFlag==="strongoutrealtime") strongoutrealtimecount++;
+
+                var latest = data[i].latest;
+                obj.latest_inc = (latest.trade-obj.trade)/obj.trade;
+                obj.latest_trade = latest.trade;
+                obj.latest_ticktime = latest.ticktime;
+                obj.latest_price_inc = latest.price_inc;
+                var mcap = (obj.volume*obj.trade/(obj.turnover/10000))/100000000;
+                obj.marketcap = mcap;
+                if (!mcap) console.log("updatedata", mcap, obj.volume, obj.trade, obj.turnover, obj.symbol)
+
+                filterdata.push(obj)
+            }
+            
+        }
+        this.flag_strongin.setAttribute("text", "si("+strongincount+")");
+        this.flag_stronginrealtime.setAttribute("text", "sirt("+stronginrealtimecount+")");
+        this.flag_strongoutrealtime.setAttribute("text", "sort("+strongoutrealtimecount+")");
+
+        console.log("data", filterdata.length)
+        this.list.items.repl.setAttribute("data", filterdata);
+    </method>
+
+    <method name="requestUpdating">
+        var me = this;
+        $.ajax({
+            url: '/api',
+            data: {
+              action: "getHistoryItems",
+              flag: "",
+              max:1000
+            },
+            success: function(data) {
+                var json = JSON.parse(data);
+                me.updateData(json);
+                return;
+            },
+            error: function(err) {
+              return console.warn('data error:', err);
+            }
+          });
+    </method>
+
+    <method name="hide">
+        this.list.items.repl.setAttribute("data", []);
+        this.setAttribute("layouthint", null);
+        this.setAttribute("height", 30);
+        this.stopAutoUpdating();
+    </method>
+
+    <method name="show">
+        this.setAttribute("layouthint", '{"weight":1}');
+        this.stopAutoUpdating();
+        this.startAutoUpdating(20000);
+    </method>
+
+</class>
+
+<class name="historyitem" height="16"
+    font-size="12" color="#d0d0d0">
+    <handler event="ondata" args="data">
+        //console.log("stockItem ondata", this);
+        this.symbol.setAttribute("text", data.symbol);
+        this.sname.setAttribute("text", data.name);
+        this.latest_trade.setAttribute("text", Number(data.latest_trade).toFixed(2));
+        var linc = data.latest_inc*100;
+        this.latest_inc.setAttribute("color", linc>0?'#ff0000':(linc===0?'#d0d0d0':'#00ff00'));
+        this.latest_inc.setAttribute("text", Number(linc).toFixed(1)+"%");
+        this.trade.setAttribute("text", Number(data.trade).toFixed(2));
+
+        var inc = data.latest_price_inc*100;
+        this.latest_price_inc.setAttribute("color", inc>0?'#ff0000':'#00ff00');
+        this.latest_price_inc.setAttribute("text", Number(inc).toFixed(1)+"%")
+        
+        if (data.pe) {
+            this.pe.setAttribute("text", data.pe.toFixed(0));
+        }
+        this.ticktime.setAttribute("text", data.ticktime);
+        
+        if (data.marketcap) {
+            this.mcap.setAttribute("text", data.marketcap.toFixed(0));
+        } else console.log("no marketcap", data)
+       // this.setAttribute("bgcolor", data.flow==="in"? '#ffdddd': '#ddffdd');
+    </handler>
+    <spacedlayout axis="x" spacing="5" updateparent="true"></spacedlayout>
+
+    <dblclicktext name="symbol" width="50" resize="false">
+        <handler event="ondblclick">
+            this.parent.parent.parent.parent.sendEvent("dblclickitem", this.parent)
+        </handler>
+        <handler event="onmouselongdown">
+            this.parent.parent.parent.parent.sendEvent("mouselongdownitem", this.parent)
+        </handler>
+    </dblclicktext>
+
+    <text name="sname" width="50" resize="false"></text>
+    <text name="trade" width="30" resize="false"  style="text-align:right"></text>
+    <text name="latest_trade" width="30" resize="false"  style="text-align:right"></text>
+    <text name="latest_inc" width="35" resize="false" style="text-align:right"></text>
+    <text name="latest_price_inc" width="35" resize="false" style="text-align:right"></text>
+    <text name="mcap" width="35" resize="false"  style="text-align:right"></text>
+    <text name="pe" width="25" resize="false"  style="text-align:right"></text>
+    <text name="ticktime"></text>
+    <text name="latest_ticktime" width="100" resize="false"></text>
+    <text name="note"></text>
+</class>
     <class name="dblclicktext" extends="text">
         <attribute name="clickcount" value="0" type="number"></attribute>
+        <attribute name="ismousedown" value="false" type="boolean"></attribute>
+
         <handler event="ondblclick"></handler>
+        <handler event="onmouselongdown"></handler>
+
+        <handler event="onmouseup">
+            clearTimeout(this.mouselongdowntimeout);
+            this.ismousedown = false;
+        </handler>
+
+        <handler event="onmousedown">
+            this.ismousedown = true;
+            var me = this;
+            this.mouselongdowntimeout = setTimeout(function(){
+                me.sendEvent("mouselongdown")
+            }, 500)
+        </handler>
+
         <handler event="onclick">
             this.clickcount++;
             if (this.clickcount === 2) {
@@ -33,99 +553,8 @@
                 me.clickcount = 0;
             }, 300)
         </handler>
-
     </class>
-    <class name="groupdetailpanel" height="30" width="400" color="#d0d0d0"
-        border="1" border-radius="3px" bgcolor="#202020" padding="5">
-        <!-- <attribute name="title" type="string" value="title"/> -->
-        <handler event="ondblclickitem" args="itemview"></handler>
-        <text text="${this.parent.title}" y="-5"></text>
-        <labelbutton text="x" y="-5" height="16" defaultcolor="null" selectcolor="null" color="#d0d0d0" x="${this.parent.width-this.width-15}">
-            <handler event="onclick">
-                this.parent.hide();
-            </handler>
-        </labelbutton>
 
-        <view name="header">
-            
-        </view>
-
-        <view name="list" y="16" height="${this.parent.height-26}" width="100%" scrollable="true">
-            <view name="items">
-                <replicator name="repl" classname="stockitem" pooling="true" lazycount="20"  
-                    sortfield="netamountratio" sortasc="false"></replicator>
-                <spacedlayout axis="y" spacing="0" updateparent="true"></spacedlayout>
-            </view>
-        </view>
-
-        <handler event="oninit">
-            //this.setAttribute("color", this.parent.parent.bordercolor);
-        </handler>
-
-        <method name="hide">
-            this.list.items.repl.setAttribute("data", []);
-            this.setAttribute("layouthint", null);
-            this.setAttribute("height", 30);
-        </method>
-
-        <method name="show" args="data, options">
-            this.setAttribute("layouthint", '{"weight":1}');
-            this.options = options;
-            for (var i=0; data.items.length>i; i++) {
-                var obj = data.items[i];
-                 var netfamt = obj.r0_in+obj.r1_in-obj.r0_out-obj.r1_out;
-                 var famt = obj.r0+obj.r1+obj.r2+obj.r3;
-                 obj.netamountratio = Math.abs(netfamt)/famt;
-            }
-
-            this.list.items.repl.setAttribute("data", data.items);
-            //this.setAttribute("visible", true)
-        </method>
-
-    </class>
-    <class name="stockitem" height="16"
-        font-size="12" color="#d0d0d0">
-        <handler event="ondata" args="data">
-            //console.log("stockItem ondata", this);
-            this.symbol.setAttribute("text", data.symbol);
-            this.sname.setAttribute("text", data.name);
-            this.trade.setAttribute("text", Number(data.trade).toFixed(2))
-
-            var inc = data.price_inc*100;
-            this.inc.setAttribute("color", inc>0?'#ff0000':'#00ff00');
-            this.inc.setAttribute("text", Number(inc).toFixed(1)+"%")
-
-            this.realtimeflow.setAttribute("text", Number(data.realtime_flow/10000).toFixed(0))
-            if(!data.realtime_flow) this.realtimeflow.setAttribute("opacity", 0.2);
-
-            var netfamt = data.r0_in+data.r1_in-data.r0_out-data.r1_out;
-            this.netflowamount.setAttribute("text", Number(netfamt/10000).toFixed(0))
-
-            var famt = data.r0+data.r1+data.r2+data.r3;
-            this.flowamount.setAttribute("text", Number(100*Math.abs(netfamt)/famt).toFixed(0)+"%")
-
-            this.ticktime.setAttribute("text", data.ticktime);
-            var mcap = (data.volume*data.trade/(data.turnover/10000))/100000000;
-            this.mcap.setAttribute("text", mcap.toFixed(0));
-           // this.setAttribute("bgcolor", data.flow==="in"? '#ffdddd': '#ddffdd');
-        </handler>
-        <spacedlayout axis="x" spacing="5" updateparent="true"></spacedlayout>
-
-        <dblclicktext name="symbol" width="50" resize="false">
-            <handler event="ondblclick">
-                this.parent.parent.parent.ondblclickitem(this.parent);
-            </handler>  
-        </dblclicktext>
-        <text name="sname" width="50" resize="false"></text>
-        <text name="trade" width="30" resize="false"  style="text-align:right"></text>
-        <text name="inc" width="35" resize="false" style="text-align:right"></text>
-        
-        <text name="realtimeflow" width="30" resize="false"  style="text-align:right"></text>
-        <text name="netflowamount" width="35" resize="false"  style="text-align:right"></text>
-        <text name="flowamount" width="20" resize="false"  style="text-align:right"></text>
-        <text name="mcap" width="35" resize="false"  style="text-align:right"></text>
-        <text name="ticktime" width="100" resize="false"></text>
-    </class>
     <activelist name="strongin" detailpanel="${this.parent.indetailpanelsleft.strongdetailpanel}"
         flow="in" bordercolor="#f0f0f0" width="200" height="50" ignorelayout="true">    
         <method name="appendData" args="data">
@@ -180,17 +609,59 @@
     
     <view name="indetailpanelsleft" x="210" height="600"  layouthint='{"weight":1}'>
         <resizelayout axis="y" spacing="10"></resizelayout>
-        <groupdetailpanel name="strongdetailpanel" title="strong in / low price"></groupdetailpanel>
-        <groupdetailpanel name="inrealtimedetailpanel" title="strong in realtime"></groupdetailpanel>
+        <groupdetailpanel name="strongdetailpanel" title="strong in / low price">
+            <handler event="ondblclickitem" args="itemview">
+                this.parent.parent.favourate.updateList(itemview.data.symbol);
+            </handler>
+            <handler event="onmouselongdownitem" args="itemview">
+                console.log("onmouselongdownitem")
+                body.bubblemanager.show(itemview.data)
+            </handler>
+        </groupdetailpanel>
+        <groupdetailpanel name="inrealtimedetailpanel" title="strong in realtime">
+            <handler event="ondblclickitem" args="itemview">
+                this.parent.parent.favourate.updateList(itemview.data.symbol);
+            </handler>
+            <handler event="onmouselongdownitem" args="itemview">
+                body.bubblemanager.show(itemview.data)
+            </handler>
+        </groupdetailpanel>
     </view>
     <view name="indetailpanelsright" height="600"  layouthint='{"weight":1}'>
         <resizelayout axis="y" spacing="10"></resizelayout>
-        <groupdetailpanel name="favourate" title="favourate"></groupdetailpanel>
-        <groupdetailpanel name="outrealtime" title="strong out realtime"></groupdetailpanel>
+        <groupdetailpanel name="favourate" title="favourate">
+            <handler event="ondblclickitem" args="itemview">
+                console.log("ondblclickitem", itemview)
+            </handler>
+            <handler event="onmouselongdownitem" args="itemview">
+                body.bubblemanager.show(itemview.data)
+            </handler>
+        </groupdetailpanel>
+
+        <historypanel name="history" title="history" clip="true">
+            <handler event="ondblclickitem" args="itemview">
+                this.parent.parent.favourate.updateList(itemview.data.symbol);
+            </handler>
+            <handler event="onmouselongdownitem" args="itemview">
+                body.bubblemanager.show(itemview.data)
+            </handler>
+        </historypanel>
+
+        <groupdetailpanel name="outrealtime" title="strong out realtime">
+            <handler event="ondblclickitem" args="itemview">
+                this.parent.parent.favourate.updateList(itemview.data.symbol);
+            </handler>
+            <handler event="onmouselongdownitem" args="itemview">
+                body.bubblemanager.show(itemview.data)
+            </handler>
+        </groupdetailpanel>
     </view>
     <activelist name="flowoutrealtime" flow="out"
         y="55" width="200" height="545" 
         bordercolor="#f0f0f0" width="200" height="600" detailpanel="${this.parent.indetailpanelsright.outrealtime}">
+        <handler event="ondblclickitem" args="itemview">
+            console.log("ondblclickitem", itemview)
+        </handler>
     </activelist>
 
     <activelist name="favourate" interval="10000" x="${this.parent.flowoutrealtime.x}" 
@@ -207,8 +678,11 @@
         <handler event="oninit">
             var str = this.getCookie("stocks");
             this.stocks = str?str.split(","):[];
-
-            this.startBtn.setAttribute("selected", true);
+            var me = this;
+            setTimeout(function(){
+                me.startBtn.setAttribute("selected", true);
+            }, 1000)
+            
         </handler>
 
         <method name="updateList" args="str">
@@ -235,7 +709,13 @@
         </method>
 
         <method name="saveToCookie" args="cname, value">
-            document.cookie=cname+ "=" +escape(value);
+            if (!value) {
+                alert("saveToCookie empty string", cname);
+                return;
+            }
+            var dd = new Date(); 
+            dd.setDate(dd.getDate()+30);
+            document.cookie=cname+ "=" +escape(value) + ";expires="+dd.toGMTString();
         </method>
 
         <method name="getCookie" args="cname">
@@ -286,6 +766,8 @@
             //console.log("always", param)
           });
     </method>
+
+
 </view>
 </body>
 </html>
